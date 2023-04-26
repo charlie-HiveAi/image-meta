@@ -14,15 +14,8 @@ pub fn load<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<ImageMeta>
     read_signature(image)?;
     let (dimensions, color) = read_header(image)?;
 
-    let mut reader = BlockReader::default();
-    reader.read(image)?;
-
     Ok(ImageMeta {
-        animation_frames: if 1 < reader.frames {
-            Some(reader.frames)
-        } else {
-            None
-        },
+        animation_frames: 0,
         color,
         dimensions,
         format: Format::Gif,
