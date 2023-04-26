@@ -15,7 +15,7 @@ pub fn load<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<ImageMeta>
     let (dimensions, color) = read_header(image)?;
 
     Ok(ImageMeta {
-        animation_frames: Some(0),
+        animation_frames: None,
         color,
         dimensions,
         format: Format::Gif,
