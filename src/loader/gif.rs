@@ -7,7 +7,7 @@ use crate::types::{Color, ColorMode, Dimensions, Format, ImageMeta};
 
 #[derive(Default)]
 struct BlockReader {
-    frames: usize,
+    // frames: usize,
 }
 
 pub fn load<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<ImageMeta> {
@@ -53,63 +53,63 @@ fn read_header<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<(Dimens
     Ok((Dimensions { width, height }, color))
 }
 
-impl BlockReader {
-    fn read<R: ?Sized + BufRead + Seek>(&mut self, image: &mut R) -> ImageResult {
-        loop {
-            let b = image.read_u8()?;
-            match b {
-                0x21 => self.read_extension(image)?,
-                0x2c => self.read_image_data(image)?,
-                0x3b => return Ok(()),
-                x => {
-                    return Err(ImageError::CorruptImage(
-                        format!("Unknown block: {:x}", x).into(),
-                    ))
-                }
-            };
-        }
-    }
+// impl BlockReader {
+//     fn read<R: ?Sized + BufRead + Seek>(&mut self, image: &mut R) -> ImageResult {
+//         loop {
+//             let b = image.read_u8()?;
+//             match b {
+//                 0x21 => self.read_extension(image)?,
+//                 0x2c => self.read_image_data(image)?,
+//                 0x3b => return Ok(()),
+//                 x => {
+//                     return Err(ImageError::CorruptImage(
+//                         format!("Unknown block: {:x}", x).into(),
+//                     ))
+//                 }
+//             };
+//         }
+//     }
 
-    fn read_extension<R: ?Sized + BufRead + Seek>(&mut self, image: &mut R) -> ImageResult {
-        match image.read_u8()? {
-            0x01 | 0xf9 | 0xfe | 0xff => (),
-            x => {
-                return Err(ImageError::CorruptImage(
-                    format!("Unknown extension: {:x}", x).into(),
-                ))
-            }
-        };
-        loop {
-            let size = image.read_u8()?;
-            if size == 0 {
-                return Ok(());
-            }
-            image.seek(SeekFrom::Current(i64::from(size)))?;
-        }
-    }
+//     fn read_extension<R: ?Sized + BufRead + Seek>(&mut self, image: &mut R) -> ImageResult {
+//         match image.read_u8()? {
+//             0x01 | 0xf9 | 0xfe | 0xff => (),
+//             x => {
+//                 return Err(ImageError::CorruptImage(
+//                     format!("Unknown extension: {:x}", x).into(),
+//                 ))
+//             }
+//         };
+//         loop {
+//             let size = image.read_u8()?;
+//             if size == 0 {
+//                 return Ok(());
+//             }
+//             image.seek(SeekFrom::Current(i64::from(size)))?;
+//         }
+//     }
 
-    fn read_image_data<R: ?Sized + BufRead + Seek>(&mut self, image: &mut R) -> ImageResult {
-        // 2 Left
-        // 2 Top
-        // 2 Width
-        // 2 Height
-        image.seek(SeekFrom::Current(8))?;
+//     fn read_image_data<R: ?Sized + BufRead + Seek>(&mut self, image: &mut R) -> ImageResult {
+//         // 2 Left
+//         // 2 Top
+//         // 2 Width
+//         // 2 Height
+//         image.seek(SeekFrom::Current(8))?;
 
-        let table_bytes = read_table_bits(image.read_u8()?)?;
-        image.seek(SeekFrom::Current(table_bytes + 1))?; // `+ 1` means LZW minimum code size
+//         let table_bytes = read_table_bits(image.read_u8()?)?;
+//         image.seek(SeekFrom::Current(table_bytes + 1))?; // `+ 1` means LZW minimum code size
 
-        loop {
-            let size = image.read_u8()?;
-            if size == 0 {
-                break;
-            }
-            image.seek(SeekFrom::Current(i64::from(size)))?;
-        }
+//         loop {
+//             let size = image.read_u8()?;
+//             if size == 0 {
+//                 break;
+//             }
+//             image.seek(SeekFrom::Current(i64::from(size)))?;
+//         }
 
-        self.frames += 1;
-        Ok(())
-    }
-}
+//         // self.frames += 1;
+//         Ok(())
+//     }
+// }
 
 /// Returns the bytes to skip
 fn read_table_bits(bits: u8) -> ImageResult<i64> {

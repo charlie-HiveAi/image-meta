@@ -105,7 +105,7 @@ fn test_each_loader_for_animation() {
     assert_eq!(
         load_file("-animation.gif", gif::load),
         ImageMeta {
-            animation_frames: Some(4),
+            animation_frames: None,
             color: Color {
                 mode: Indexed,
                 alpha_channel: false,
@@ -118,7 +118,7 @@ fn test_each_loader_for_animation() {
     assert_eq!(
         load_file("-animation.png", png::load),
         ImageMeta {
-            animation_frames: Some(4),
+            animation_frames: None,
             color: Color {
                 mode: Rgb,
                 alpha_channel: true,
@@ -217,7 +217,7 @@ fn test_guess_loader_for_animation() {
     assert_eq!(
         load_file("-animation.gif", load),
         ImageMeta {
-            animation_frames: Some(4),
+            animation_frames: None,
             color: Color {
                 mode: Indexed,
                 alpha_channel: false,
@@ -230,7 +230,7 @@ fn test_guess_loader_for_animation() {
     assert_eq!(
         load_file("-animation.png", load),
         ImageMeta {
-            animation_frames: Some(4),
+            animation_frames: None,
             color: Color {
                 mode: Rgb,
                 alpha_channel: true,
@@ -277,4 +277,25 @@ fn test_load_webp_corrupt_riff_chunk() {
     // This caused subtraction overflow while reading a chunk
     let mut file = Cursor::new(b"RIFF\x08\x00\x00\x00WEBPVP8 \x00\x00\x00\x00");
     assert!(webp::load(&mut file).is_err());
+}
+
+#[test]
+fn test_critical_jpeg() {
+    let image = std::fs::read("test-files/wood.jpeg").unwrap();
+    let metadata;
+    let mut idx = 4096;
+    loop {
+        match load_from_buf(&image[0..idx]) {
+            Ok(image_meta) => {
+                metadata = Some(image_meta);
+                break;
+            },
+            Err(_err) => {
+            }
+        }
+        idx += 4096;
+    };
+    let dimensions = metadata.unwrap().dimensions;
+    assert_eq!(dimensions.height, 1200);
+    assert_eq!(dimensions.width, 1920);
 }

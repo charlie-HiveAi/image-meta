@@ -11,10 +11,10 @@ pub fn load<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<ImageMeta>
     read_signature(image)?;
 
     let (dimensions, color) = read_header(image)?;
-    let animation_frames = read_fctls(image)?;
+    // let animation_frames = read_fctls(image)?;
 
     Ok(ImageMeta {
-        animation_frames,
+        animation_frames: None,
         color,
         dimensions,
         format: Format::Png,
@@ -79,23 +79,23 @@ fn read_chunk<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<([u8; 4]
     Ok((chunk_name, result))
 }
 
-fn read_fctls<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<Option<usize>> {
-    let mut result = 0;
-    let mut chunk_name = [0u8; 4];
-    loop {
-        let length = image.read_u32::<BigEndian>()?;
-        image.read_exact(&mut chunk_name)?;
-        if chunk_name == *b"fcTL" {
-            result += 1;
-        }
-        image.seek(SeekFrom::Current(i64::from(length) + 4))?; // 4 means CRC
-        if chunk_name == *b"IEND" {
-            break;
-        }
-    }
-    if 0 < result {
-        Ok(Some(result))
-    } else {
-        Ok(None)
-    }
-}
+// fn read_fctls<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<Option<usize>> {
+//     let mut result = 0;
+//     let mut chunk_name = [0u8; 4];
+//     loop {
+//         let length = image.read_u32::<BigEndian>()?;
+//         image.read_exact(&mut chunk_name)?;
+//         if chunk_name == *b"fcTL" {
+//             result += 1;
+//         }
+//         image.seek(SeekFrom::Current(i64::from(length) + 4))?; // 4 means CRC
+//         if chunk_name == *b"IEND" {
+//             break;
+//         }
+//     }
+//     if 0 < result {
+//         Ok(Some(result))
+//     } else {
+//         Ok(None)
+//     }
+// }
