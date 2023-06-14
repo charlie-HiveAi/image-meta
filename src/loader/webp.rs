@@ -60,6 +60,9 @@ impl<T: BufRead + Seek> WebpReader<T> {
                 b"VP8X" => self.dimensions = Some(read_vp8x_chunk(&mut chunk)?),
                 _ => (),
             }
+            if self.dimensions.is_some() {
+                break;
+            }
         }
         Ok(())
     }
@@ -67,7 +70,6 @@ impl<T: BufRead + Seek> WebpReader<T> {
 
 fn read_vp8_chunk(chunk: &mut Chunk) -> ImageResult<Dimensions> {
     // See https://tools.ietf.org/html/rfc6386#page-30
-
     let mut bits = [0u8; 3];
     chunk.read_exact(&mut bits)?;
     let key_frame = 0 == bits[0] & 1;

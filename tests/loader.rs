@@ -131,7 +131,7 @@ fn test_each_loader_for_animation() {
     assert_eq!(
         load_file("-animation.webp", webp::load),
         ImageMeta {
-            animation_frames: Some(4),
+            animation_frames: None,
             color: Color {
                 mode: Rgb,
                 alpha_channel: true,
@@ -243,7 +243,7 @@ fn test_guess_loader_for_animation() {
     assert_eq!(
         load_file("-animation.webp", load),
         ImageMeta {
-            animation_frames: Some(4),
+            animation_frames: None,
             color: Color {
                 mode: Rgb,
                 alpha_channel: true,
@@ -298,4 +298,26 @@ fn test_critical_jpeg() {
     let dimensions = metadata.unwrap().dimensions;
     assert_eq!(dimensions.height, 1200);
     assert_eq!(dimensions.width, 1920);
+}
+
+#[test]
+fn test_critical_webp() {
+    let image = std::fs::read("test-files/webp-critical.webp").unwrap();
+    let metadata;
+    let mut idx = 4096;
+    loop {
+        match load_from_buf(&image[0..idx]) {
+            Ok(image_meta) => {
+                metadata = Some(image_meta);
+                break;
+            },
+            Err(err) => {
+                println!("{err:#?}")
+            }
+        }
+        idx += 4096;
+    };
+    let dimensions = metadata.unwrap().dimensions;
+    assert_eq!(dimensions.height, 480);
+    assert_eq!(dimensions.width, 640);
 }
