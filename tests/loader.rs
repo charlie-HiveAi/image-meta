@@ -131,7 +131,7 @@ fn test_each_loader_for_animation() {
     assert_eq!(
         load_file("-animation.webp", webp::load),
         ImageMeta {
-            animation_frames: None,
+            animation_frames: Some(0),
             color: Color {
                 mode: Rgb,
                 alpha_channel: true,
@@ -243,7 +243,7 @@ fn test_guess_loader_for_animation() {
     assert_eq!(
         load_file("-animation.webp", load),
         ImageMeta {
-            animation_frames: None,
+            animation_frames: Some(0),
             color: Color {
                 mode: Rgb,
                 alpha_channel: true,
@@ -317,7 +317,9 @@ fn test_critical_webp() {
         }
         idx += 4096;
     };
-    let dimensions = metadata.unwrap().dimensions;
+    let metadata = metadata.unwrap();
+    assert_eq!(metadata.is_animation(), true);
+    let dimensions = metadata.dimensions;
     assert_eq!(dimensions.height, 480);
     assert_eq!(dimensions.width, 640);
 }

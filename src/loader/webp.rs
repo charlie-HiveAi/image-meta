@@ -1,12 +1,14 @@
 use std::io::{BufRead, Read, Seek};
 
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{ReadBytesExt};
 
 use crate::errors::{ImageError, ImageResult};
 use crate::loader::riff::{Chunk, RiffReader};
 use crate::types::{Color, ColorMode, Dimensions, Format, ImageMeta};
 
+type IsAnimated = bool;
 pub struct WebpReader<T: BufRead + Seek> {
+    is_animated: IsAnimated,
     animation_frames: usize,
     dimensions: Option<Dimensions>,
     riff: RiffReader<T>,
@@ -19,8 +21,8 @@ pub fn load<R: ?Sized + BufRead + Seek>(image: &mut R) -> ImageResult<ImageMeta>
     let dimensions = reader
         .dimensions
         .ok_or_else(|| ImageError::CorruptImage("VP8? chunk not found".into()))?;
-    let animation_frames = if 0 < reader.animation_frames {
-        Some(reader.animation_frames)
+    let animation_frames = if reader.is_animated {
+        Some(0)
     } else {
         None
     };
@@ -43,6 +45,7 @@ impl<T: BufRead + Seek> WebpReader<T> {
         Self {
             animation_frames: 0,
             dimensions: None,
+            is_animated: false,
             riff,
         }
     }
@@ -57,7 +60,7 @@ impl<T: BufRead + Seek> WebpReader<T> {
                 b"ANMF" => self.animation_frames += 1,
                 b"VP8 " => self.dimensions = Some(read_vp8_chunk(&mut chunk)?),
                 b"VP8L" => self.dimensions = Some(read_vp8l_chunk(&mut chunk)?),
-                b"VP8X" => self.dimensions = Some(read_vp8x_chunk(&mut chunk)?),
+                b"VP8X" => (self.dimensions, self.is_animated) = read_vp8x_chunk(&mut chunk)?,
                 _ => (),
             }
             if self.dimensions.is_some() {
@@ -121,20 +124,23 @@ fn read_vp8l_chunk(chunk: &mut Chunk) -> ImageResult<Dimensions> {
     })
 }
 
-fn read_vp8x_chunk(chunk: &mut Chunk) -> ImageResult<Dimensions> {
+fn read_vp8x_chunk(chunk: &mut Chunk) -> ImageResult<(Option<Dimensions>, IsAnimated)> {
     // See https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification
 
-    let _bits = chunk.read_u32::<LittleEndian>()?;
+    let mut bits = [0u8; 4];
+    chunk.read_exact(&mut bits)?;
+    let is_animated = (bits[0] >> 1 & 0x01) == 1;
+
 
     let mut bits = [0u8; 6];
     chunk.read_exact(&mut bits)?;
     let width = u32::from(bits[2]) << 16 | u32::from(bits[1]) << 8 | u32::from(bits[0]);
     let height = u32::from(bits[5]) << 16 | u32::from(bits[4]) << 8 | u32::from(bits[3]);
 
-    Ok(Dimensions {
+    Ok((Some(Dimensions {
         width: width + 1,
         height: height + 1,
-    })
+    }), is_animated))
 }
 
 fn extract_dimension(bits: [u8; 2]) -> (u16, u8) {
